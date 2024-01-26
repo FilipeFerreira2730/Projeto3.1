@@ -21,14 +21,14 @@ def read_tasks():
 
 def template(df):
     template_str = """
-    {% for index, row in df.iterrows() %}
-        o id {{ row['uuid'] }} pertence à loja {{ row['store_id'] }},
-        {% if row['org_code'] is not nan %}
+        {% for index, row in df.iterrows() %}
+        O id {{ row['uuid'] }} pertence à loja {{ row['store_id'] }},
+        {% if row['org_code'] is not none %}
             categoria {{ row['org_code'] }},
         {% else %}
             categoria não definida,
         {% endif %}
-        {% if row['assigned_user'] is not nan 0 %}
+        {% if row['assigned_user'] is not none %}
             e está atribuído ao utilizador {{ row['assigned_user'] }}.
         {% else %}
             e não está atribuído a nenhum utilizador.
