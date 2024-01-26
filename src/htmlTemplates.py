@@ -1,5 +1,4 @@
 
-
 css = '''
 <style>
 .chat-message {
@@ -30,16 +29,14 @@ css = '''
 bot_template = '''
 <div class="chat-message bot">
     <div class="avatar">
-       <img src="src/assets/bot.png">
-    </div>
-    <div class="message">{{MSG}}</div>
+  <img width="96" height="96" src="https://img.icons8.com/color/96/message-bot.png" alt="message-bot"/>
 </div>
 '''
 
 user_template = '''
 <div class="chat-message user">
     <div class="avatar">
-        <img src="/src/assets/user.png">
+        <img width="64" height="64" src="https://img.icons8.com/pastel-glyph/64/000000/user-male-circle.png" alt="user-male-circle"/>
     </div>    
     <div class="message">{{MSG}}</div>
 </div>

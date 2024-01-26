@@ -1,4 +1,3 @@
-import pandas as pd
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -8,25 +7,65 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 import streamlit as st
-from htmlTemplates import user_template, bot_template
-
+from htmlTemplates import user_template, bot_template, css
+from jinja2 import Template
+import pandas as pd
 
 
 def read_tasks():
-    df = pd.read_csv("Input/tasks.csv", sep=';')
+    df = pd.read_csv("Input/tasks1.csv", sep=';')
     columns = ['uuid', 'app_code', 'store_id', 'org_code', 'assigned_user']
-    df['assigned_user'] = df['assigned_user'].replace(99999999, 0)
-    df['assigned_user'] = df['assigned_user'].fillna(0).astype(int)
     df_template = df[columns]
     return df_template
 
 
 def template(df):
-    sentences = []
-    for index, row in df.iterrows():
-        sentence = f"o id {row['uuid']} pertence à loja {row['store_id']}, categoria {row['org_code']} e está atribuído ao utilizador {row['assigned_user']}."
-        sentences.append(sentence)
-    return sentences
+    template_str = """
+    {% for index, row in df.iterrows() %}
+        o id {{ row['uuid'] }} pertence à loja {{ row['store_id'] }},
+        {% if row['org_code'] is not nan %}
+            categoria {{ row['org_code'] }},
+        {% else %}
+            categoria não definida,
+        {% endif %}
+        {% if row['assigned_user'] is not nan 0 %}
+            e está atribuído ao utilizador {{ row['assigned_user'] }}.
+        {% else %}
+            e não está atribuído a nenhum utilizador.
+        {% endif %}
+    {% endfor %}
+    """
+    final_template = Template(template_str)
+    rendered_text = final_template.render(df=df)
+    return rendered_text
+
+
+def is_database_empty():
+    db_params = {
+        "host": "db-template",
+        "port": 5432,
+        "user": "p3",
+        "password": "p3",
+        "database": "p3",
+    }
+    conn = psycopg2.connect(
+        host=db_params['host'],
+        port=db_params['port'],
+        user=db_params['user'],
+        password=db_params['password'],
+        database=db_params['database']
+    )
+
+    cursor = conn.cursor()
+
+    # Check if the tasks table is empty
+    cursor.execute("SELECT COUNT(*) FROM public.task")
+    count = cursor.fetchone()[0]
+
+    # Close the connection
+    conn.close()
+
+    return count == 0
 
 
 def insert_into_database(sentences):
@@ -75,73 +114,65 @@ def read_tasks_from_database():
 
 
 def chunk_data(data, chunk_size):
-    print("chunk data")
-    print(data)
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
 
 
-def get_vectorstore_from_data(data_vector_store):
-    # Create a DataFrame from the list
-    print("data_vector_store")
-    print(data_vector_store)
+def get_vectorstore_from_data(data_vector_store, chunk_size):
+    data_chunks = chunk_data(data_vector_store, chunk_size)
 
-
-    data = pd.DataFrame({'task_template': data_vector_store})
-    print("data")
-    print(data)
-
-    print("data-task-template")
-    # Ensure all values in the 'task_template' column are strings
-    data['task_template'] = data['task_template'].astype(str)
-    print(data['task_template'])
-
-    # Extract the text data from the DataFrame
-    data_chunks = data['task_template'].tolist()
-    print(data_chunks)
-    # Initialize embeddings (replace this with your actual setup)
     embeddings = OpenAIEmbeddings()
 
-    # Create the vector store
-    vectorstore = FAISS.from_texts(texts=data_chunks, embedding=embeddings)
+    vectorstore = FAISS.from_texts(texts=[str(chunk) for chunk in data_chunks], embedding=embeddings)
 
     return vectorstore
 
 
-
 def get_conversation_chain(vectorstore):
     llm = ChatOpenAI()
-    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
-    conversation_chain = ConversationalRetrievalChain.from_llm(llm=llm, retriever=vectorstore.as_retriever(),
-                                                               memory=memory)
+
+    memory = ConversationBufferMemory(
+        memory_key='chat_history', return_messages=True)
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory
+    )
+
+    print(vectorstore.as_retriever())
     return conversation_chain
 
 
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
+
     for i, message in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
+            print("input")
             st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
         else:
+            print("response")
             st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
 
 
 def main():
-    print("OLA")
-    #df = read_tasks()
-    print("OLE")
-    #generated_rows = template(df)
-    print("oi")
-    #insert_into_database(generated_rows)
-    print("AAAAA")
-
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(dotenv_path)
 
-    print(os.getenv("OPENAI_API_KEY"))
+    chat = ChatOpenAI(temperature=0)
 
-    st.set_page_config(page_title="Tlantic Chatbot", page_icon=":memo:")
+    if is_database_empty():
+        df = read_tasks()
+        generated_rows = template(df)
+        insert_into_database(generated_rows)
 
+    st.set_page_config(page_title="Tlantic Chatbot", page_icon="assets/unnamed.jpg")
+    st.write(css, unsafe_allow_html=True)
+
+    tasks = read_tasks_from_database()
+    data_vector_store = chunk_data(tasks, 5)
+    vectorstore = get_vectorstore_from_data(data_vector_store, 5)
+    st.session_state.conversation = get_conversation_chain(vectorstore)
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
@@ -149,16 +180,11 @@ def main():
         st.session_state.chat_history = None
 
     st.header("How can I help you today?")
-    user_question = st.text_input("Ask me a question:")
-    if user_question:
-        df = read_tasks()
-        # base de dados
-        tasks = read_tasks_from_database()
-        data_vector_store = chunk_data(tasks, 300)
-        vectorstore = get_vectorstore_from_data(data_vector_store)
-        st.session_state.conversation = get_conversation_chain(vectorstore)
-        handle_userinput(user_question)
+    with st.sidebar:
+        user_question = st.text_input("Ask a question :")
 
+    if user_question:
+        handle_userinput(user_question)
 
 
 if __name__ == '__main__':
