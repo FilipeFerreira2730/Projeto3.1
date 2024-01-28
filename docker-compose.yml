@@ -1,14 +1,5 @@
 services:
 
-  # Database to store template data
-  db-template:
-    container_name: db-template
-    build: Docker/db
-    volumes:
-      - db-data:/var/lib/postgresql/shared-data/
-    ports:
-      - "5432:5432"
-
   python:
     container_name: python
     build: Docker/python
@@ -18,10 +9,6 @@ services:
     environment:
       USE_DEV_MODE: ${USE_DEV_MODE}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-    depends_on:
-      - db-template
     ports:
       - "8501:8501"
 
-volumes:
-  db-data:

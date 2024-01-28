@@ -29,15 +29,17 @@ css = '''
 bot_template = '''
 <div class="chat-message bot">
     <div class="avatar">
-  <img width="96" height="96" src="https://img.icons8.com/color/96/message-bot.png" alt="message-bot"/>
+         <img width="96" height="96" src="https://img.icons8.com/color/96/message-bot.png" alt="message-bot"/>
+    </div>
+    <div class="message">{{MSG}}</div>
 </div>
 '''
 
 user_template = '''
 <div class="chat-message user">
     <div class="avatar">
-        <img width="64" height="64" src="https://img.icons8.com/pastel-glyph/64/000000/user-male-circle.png" alt="user-male-circle"/>
-    </div>    
+      <img width="64" height="64" src="https://img.icons8.com/pastel-glyph/64/FFFFFF/user-male-circle.png" alt="user-male-circle"/>
+    </div>
     <div class="message">{{MSG}}</div>
 </div>
 '''
