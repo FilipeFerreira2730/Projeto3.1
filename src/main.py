@@ -1,20 +1,25 @@
-import psycopg2
 import os
-from dotenv import load_dotenv
+import textwrap
+
+
+import pandas as pd
+from dotenv import load_dotenv  # Assuming you meant to load environment variables with dotenv
+from flask import Flask, jsonify, request
+from jinja2 import Template
+from PyPDF2 import PdfReader
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+# Assuming langchain and other related imports are from third-party libraries or local modules
 from langchain import FAISS
-from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
-import streamlit as st
-from htmlTemplates import user_template, bot_template, css
-from jinja2 import Template
-import pandas as pd
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import textwrap
-from PyPDF2 import PdfReader
+from langchain.text_splitter import CharacterTextSplitter
+
+
+app = Flask(__name__)
 
 
 def read_tasks():
@@ -22,6 +27,7 @@ def read_tasks():
     columns = ['uuid', 'app_code', 'store_id', 'org_code', 'assigned_user']
     df_template = df[columns]
     return df_template
+
 
 def template(df):
     template_str = """
@@ -36,6 +42,7 @@ def template(df):
     final_template = Template(template_str)
     rendered_text = final_template.render(df=df)
     return rendered_text
+
 
 def create_pdf(rendered_text):
     c = canvas.Canvas(filename='assets/output.pdf', pagesize=letter)
@@ -64,6 +71,7 @@ def create_pdf(rendered_text):
 
     c.save()
 
+
 def get_pdf_text(pdf_path):
     text = ""
 
@@ -87,10 +95,12 @@ def get_text_chunks(text):
     chunks = text_splitter.split_text(text)
     return chunks
 
+
 def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings()
     vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
     return vectorstore
+
 
 def get_conversation_chain(vectorstore):
     llm = ChatOpenAI()
@@ -105,25 +115,24 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 
-def handle_userinput(user_question):
-    response = st.session_state.conversation({'question': user_question})
-    st.session_state.chat_history = response['chat_history']
+def handle_userinput(user_question, conversation_chain):
+    response = conversation_chain({'question': user_question})
+    chat_history = response['chat_history']
 
-    for i, message in enumerate(st.session_state.chat_history):
-        if i % 2 == 0:
-            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
-        else:
-            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+    messages = []
+    for i, message in enumerate(chat_history):
+        # Determine if the message is from the user or the bot
+        sender = "User" if i % 2 == 0 else "Bot"
+        # Format the message, for example, as a dictionary
+        formatted_message = {"sender": sender, "content": message.content}
+        messages.append(formatted_message)
+
+    return messages
 
 
-def main():
-    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-    load_dotenv(dotenv_path)
-
-    chat = ChatOpenAI(temperature=0)
-
-    st.set_page_config(page_title="Tlantic Chatbot", page_icon="assets/unnamed.jpg")
-    st.write(css, unsafe_allow_html=True)
+@app.route('/chat', methods=['POST'])
+def chat():
+    print("oi")
 
     tasks = read_tasks()
     rendered_template = template(tasks)
@@ -131,21 +140,17 @@ def main():
     raw_text = get_pdf_text("assets/output.pdf")
     text_chunks = get_text_chunks(raw_text)
     vectorstore = get_vectorstore(text_chunks)
-    st.session_state.conversation = get_conversation_chain(vectorstore)
+    conversation_chain = get_conversation_chain(vectorstore)
 
+    data = request.json
+    user_question = data.get('question')
 
-    if "conversation" not in st.session_state:
-            st.session_state.conversation = None
-    if "chat_history" not in st.session_state:
-            st.session_state.chat_history = None
-
-    st.header("How can I help you today?")
-    with st.sidebar:
-        user_question = st.text_input("Ask a question :")
-
-    if user_question:
-        handle_userinput(user_question)
+    messages = handle_userinput(user_question, conversation_chain)
+    return jsonify(messages)
 
 
 if __name__ == '__main__':
-    main()
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+

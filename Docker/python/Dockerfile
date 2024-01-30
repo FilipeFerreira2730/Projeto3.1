@@ -1,29 +1,32 @@
+# Use an official Python runtime as a parent image
 FROM python:3.9.15-slim
 
+# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Install nodemon and other system dependencies
-RUN apt-get update \
-    && apt-get install -y curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    libpq-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm@9.2.0 \
-    && npm install -g nodemon \
-    && apt-get install -y libpq-dev build-essential
+    && npm install -g npm@9.2.0 nodemon \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file
-COPY requirements.txt ./
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application
+# Copy the current directory contents into the container at /usr/src/app
 COPY . .
 
-# Install Streamlit
-RUN pip install streamlit
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 8501 available to the world outside this container
-EXPOSE 8501
+# Make port 5000 available to the world outside this container
+EXPOSE 5000
 
-# Run Streamlit app when the container launches
-CMD ["streamlit", "run", "main.py"]
+# Define environment variable
+ENV FLASK_APP=main.py
+ENV FLASK_ENV=development
+
+# Run app.py when the container launches
+CMD ["flask", "run", "--host=0.0.0.0"]
