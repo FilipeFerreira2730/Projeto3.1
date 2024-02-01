@@ -5,6 +5,7 @@ import textwrap
 import pandas as pd
 from dotenv import load_dotenv  # Assuming you meant to load environment variables with dotenv
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from jinja2 import Template
 from PyPDF2 import PdfReader
 from reportlab.lib.pagesizes import letter
@@ -20,6 +21,8 @@ from langchain.text_splitter import CharacterTextSplitter
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "http://localhost:4200"}})
+
 
 
 def read_tasks():
