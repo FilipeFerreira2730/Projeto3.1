@@ -17,3 +17,28 @@
 * Langchain: Integrated for specific functionalities, enhancing the overall capabilities of the assistant.
 
 * API REST: The backend exposes RESTful APIs for seamless communication with other components of the application.
+
+### How to I setup my development environment? ###
+
+* Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+* Create the necessary Docker Images and Containers by running the following command in the project's root folder:
+```
+docker-compose up --build -d
+```
+* *Note:* the **-d** flag intends to launch all the containers in background. If not used, all the containers will run attached to the same process.
+* Once your are done working in the assignment, you can remove everything by running:
+```
+docker-compose down
+```
+* **NOTE:** once you run the command above, the data in the database will be reset if not stored in a volume. Consider stopping the container instead, if you want to keep the data.
+```
+# stops all the containers
+docker-compose stop
+
+# restarts all the containers 
+docker-compose start
+```
+
+### Architecture ###
+
+![alt text](architecture.png)
