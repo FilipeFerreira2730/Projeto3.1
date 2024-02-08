@@ -34,14 +34,15 @@ def read_tasks():
 
 def template(df):
     template_str = """
-        {% for index, row in df.iterrows() %}
-        {% if row['uuid'] is not none %}
-            A tarefa com o id {{ row['uuid'] }} pertence à loja {{ row['store_id'] }}, {% if row['org_code'] is not none %} categoria {{ row['org_code'] }},{% else %} categoria não definida, {% endif %}{% if row['assigned_user'] is not none %}e está atribuído ao utilizador {{ row['assigned_user'] }}.{% else %}e não está atribuído a nenhum utilizador.{% endif %}
+      {% for index, row in df.iterrows() %}
+        {% if row['uuid'] and row['store_id'] %}
+            A tarefa com o id {{ row['uuid'] }} pertence à loja {{ row['store_id'] }}, {% if row['org_code'] %} categoria {{ row['org_code'] }},{% else %} categoria não definida, {% endif %}{% if not row['assigned_user'] or row['assigned_user'] != row['assigned_user'] %} e não está atribuído a nenhum utilizador.{% else %} e está atribuído ao utilizador {{ row['assigned_user'] }}.{% endif %}
         {% else %}
-            A tarefa com o id está nulo para a loja {{ row['store_id'] }}, {% if row['org_code'] is not none %} categoria {{ row['org_code'] }},{% else %} categoria não definida, {% endif %}{% if row['assigned_user'] is not none %}e está atribuído ao utilizador {{ row['assigned_user'] }}.{% else %}e não está atribuído a nenhum utilizador.{% endif %}
+            A tarefa com o id {{ row['uuid'] }} está nulo para a loja {{ row['store_id'] }}, {% if row['org_code'] %} categoria {{ row['org_code'] }},{% else %} categoria não definida, {% endif %}{% if not row['assigned_user'] or row['assigned_user'] != row['assigned_user'] %} e não está atribuído a nenhum utilizador.{% else %} e está atribuído ao utilizador {{ row['assigned_user'] }}.{% endif %}
         {% endif %}
-        {% endfor %}
-    """
+    {% endfor %}
+ """
+
     final_template = Template(template_str)
     rendered_text = final_template.render(df=df)
     return rendered_text

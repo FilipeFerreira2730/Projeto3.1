@@ -1,4 +1,4 @@
-# Projeto 3 | AI Cockpit Assistant - Backend ([IPVC](https://www.ipvc.pt/) / [Tlantic](https://www.tlantic.com/pt/)) | Curricular Internship
+# Project 3 | AI Cockpit Assistant - Backend ([IPVC](https://www.ipvc.pt/) / [Tlantic](https://www.tlantic.com/pt/)) | Curricular Internship
 * Teacher : [Jorge Ribeiro](mailto:jribeiro@estg.ipvc.pt)
 
 ## Overview
@@ -18,7 +18,11 @@
 
 * API REST: The backend exposes RESTful APIs for seamless communication with other components of the application.
 
-### How to I setup my development environment? ###
+* FAISS : Faiss is a library for efficient similarity search and clustering of dense vectors. It contains algorithms that search in sets of vectors of any size, up to ones that possibly do not fit in RAM. It also contains supporting code for evaluation and parameter tuning.
+
+
+
+## How to I setup my development environment? 
 
 * Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 * Create the necessary Docker Images and Containers by running the following command in the project's root folder:
